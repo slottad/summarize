@@ -13,13 +13,13 @@
 * END_COPYRIGHT
 */
 
-
 #include <limits>
 #include <sstream>
 #include <memory>
 #include <string>
 #include <vector>
 #include <ctype.h>
+
 
 #include <system/Exceptions.h>
 #include <system/SystemCatalog.h>
@@ -30,16 +30,18 @@
 #include <query/FunctionLibrary.h>
 #include <query/Operator.h>
 #include <query/TypeSystem.h>
-#include <query/FunctionLibrary.h>
-#include <query/Operator.h>
+
 #include <array/DBArray.h>
 #include <array/Tile.h>
 #include <array/TileIteratorAdaptors.h>
+
 #include <util/Platform.h>
+#include <util/Network.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/unordered_map.hpp>
 
+#include <fcntl.h>
 #include "FastCountSettings.h"
 
 #ifdef CPP11
@@ -93,6 +95,56 @@ public:
     }
 #endif
 
+
+ size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
+    {
+
+	 	InstanceID const myId    = query->getInstanceID();
+    	InstanceID const coordId = 0;
+
+    	size_t const numInstances = query->getInstancesCount();
+        size_t const scalarSize   = sizeof(size_t);
+
+
+    	shared_ptr<SharedBuffer> bufsend(new MemoryBuffer( &(instancecount), scalarSize));
+
+        size_t tempcount;
+        shared_ptr<SharedBuffer> buf(new MemoryBuffer( &(tempcount), scalarSize));
+
+    	size_t count = instancecount;
+
+    	if(myId != coordId)
+    	{
+    		//LOG4CXX_DEBUG(logger, "FASTCOUNT - BufSend the data");
+    		BufSend(coordId, bufsend, query);
+    		//LOG4CXX_DEBUG(logger, "FASTCOUNT - EXIT BufSend the data");
+    	}
+
+    	if(myId == coordId)
+    	{
+
+    		for(InstanceID i = 0; i<numInstances; ++i)
+    		{
+    			if (i == myId)
+    			{
+    				continue;
+    			}
+    			//LOG4CXX_DEBUG(logger, "FASTCOUNT -BufReceive the data");
+    			buf = BufReceive(i, query);
+
+    			size_t tempcount;
+    			memcpy(&tempcount, buf->getData(), scalarSize);
+
+    			//LOG4CXX_DEBUG(logger, "FASTCOUNT - BufReceive the data:" << foo);
+    			count = count + tempcount;
+    		}
+    	}
+
+
+    return count;
+    }
+
+
     std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     {
     	FastCountSettings settings (_parameters, false, query);
@@ -100,48 +152,51 @@ public:
     	shared_ptr<Array>& input = inputArrays[0];
     	shared_ptr< Array> outArray;
 
-    	//shared_ptr<Array> output(new MemArray(inputArrays->getArrayDesc(), query));
-    	//shared_ptr<ArrayIterator> outputArrayIterator(output->getIterator(0));
-
     	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
     	size_t count = 0;
 
     	while(!inputIterator-> end())
     	{
-    		//Coordinates const& pos = inputIterator->getPosition();
-    		std::shared_ptr<ConstChunkIterator> inputChunkIterator = inputIterator->getChunk().getConstIterator();
-    		//if(!inputChunkIterator->end()) //just 1 value in chunk
-    		//{
+
+    			std::shared_ptr<ConstChunkIterator> inputChunkIterator = inputIterator->getChunk().getConstIterator();
+
     			ConstChunk const& chunk = inputChunkIterator->getChunk();
     			count+= chunk.count();
 
-    			//++(*inputChunkIterator);
-    		//}
-
-    		++(*inputIterator);
+    			++(*inputIterator);
     	}
 
-    	LOG4CXX_DEBUG(logger, "FASTCOUNT - Finished fast counting the chunk values");
+    	size_t remotecount =  exchangeCount(count, query);
+    	shared_ptr<Array> outputArray(new MemArray(_schema, query));
 
-        shared_ptr<Array> outputArray(new MemArray(_schema, query));
+    	if(query->getInstanceID() == 0)
+        {
 
-        shared_ptr<ArrayIterator> outputArrayIter = outputArray->getIterator(0);
-        Coordinates position(1,0);
+        	shared_ptr<ArrayIterator> outputArrayIter = outputArray->getIterator(0);
+        	Coordinates position(1,0);
 
-        position[0] = query->getInstanceID();
+        	shared_ptr<ChunkIterator> outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
+        	outputChunkIter->setPosition(position);
 
-        shared_ptr<ChunkIterator> outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
-        outputChunkIter->setPosition(position);
+        	Value value;
+        	value.setUint64(remotecount);
+        	outputChunkIter->writeItem(value);
+        	outputChunkIter->flush();
 
-        Value value;
-        value.setUint64(count);
-        outputChunkIter->writeItem(value);
-        outputChunkIter->flush();
+        	return outputArray;
 
-    	return outputArray;
+        }
+
+        else
+        {
+        	return outputArray;
+        }
+
 
     }
 };
+
+
 
 REGISTER_PHYSICAL_OPERATOR_FACTORY(PhysicalFastCount, "fast_count", "PhysicalFastCount");
 
