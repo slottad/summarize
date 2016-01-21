@@ -13,6 +13,17 @@
 * END_COPYRIGHT
 */
 
+/**
+ * @file PhysicalFastCount.cpp
+  *
+   * @brief count using the chunk map instead of iteration over all chunks 
+    *
+     * @author Jonathan Rivers <jrivers96@gmail.com>
+      * @author poliocough@gmail.com
+       * @author others
+        */
+
+
 #include <limits>
 #include <sstream>
 #include <memory>
