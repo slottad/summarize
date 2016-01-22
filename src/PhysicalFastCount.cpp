@@ -1,12 +1,12 @@
 
 /**
  * @file PhysicalFastCount.cpp
-  *
-   * @brief count using the chunk map instead of iteration over all chunks 
-    *
-     * @author Jonathan Rivers <jrivers96@gmail.com>
-       * @author others
-        */
+ *
+ * @brief count using the chunk map instead of iteration over all chunks
+ *
+ * @author Jonathan Rivers <jrivers96@gmail.com>
+ * @author others
+ */
 
 #include <limits>
 #include <sstream>
@@ -41,22 +41,22 @@
 #include <log4cxx/logger.h>
 
 
- #ifdef CPP11
- using std::shared_ptr;
- using std::make_shared;
- #else
- using boost::shared_ptr;
- using boost::make_shared;
- #endif
+#ifdef CPP11
+using std::shared_ptr;
+using std::make_shared;
+#else
+using boost::shared_ptr;
+using boost::make_shared;
+#endif
 
- using boost::algorithm::trim;
- using boost::starts_with;
- using boost::lexical_cast;
- using boost::bad_lexical_cast;
+using boost::algorithm::trim;
+using boost::starts_with;
+using boost::lexical_cast;
+using boost::bad_lexical_cast;
 
- using namespace std;
+using namespace std;
 
- using boost::algorithm::is_from_range;
+using boost::algorithm::is_from_range;
 
 
 namespace scidb
@@ -68,135 +68,135 @@ using namespace scidb;
 
 static void EXCEPTION_ASSERT(bool cond)
 {
-    if (! cond)
-    {
-        throw SYSTEM_EXCEPTION(SCIDB_SE_INTERNAL, SCIDB_LE_ILLEGAL_OPERATION) << "Internal inconsistency";
-    }
+	if (! cond)
+	{
+		throw SYSTEM_EXCEPTION(SCIDB_SE_INTERNAL, SCIDB_LE_ILLEGAL_OPERATION) << "Internal inconsistency";
+	}
 }
 
 class PhysicalFastCount : public PhysicalOperator
 {
 public:
-    PhysicalFastCount(std::string const& logicalName,
-                  std::string const& physicalName,
-                  Parameters const& parameters,
-                   ArrayDesc const& schema):
-        PhysicalOperator(logicalName, physicalName, parameters, schema)
-    {}
+	PhysicalFastCount(std::string const& logicalName,
+			std::string const& physicalName,
+			Parameters const& parameters,
+			ArrayDesc const& schema):
+				PhysicalOperator(logicalName, physicalName, parameters, schema)
+{}
 
-    virtual bool changesDistribution(std::vector<ArrayDesc> const&) const
-    {
-        return true;
-    }
+	virtual bool changesDistribution(std::vector<ArrayDesc> const&) const
+	{
+		return true;
+	}
 
 #ifdef CPP11
-    virtual RedistributeContext getOutputDistribution(std::vector<RedistributeContext> const&, std::vector<ArrayDesc> const&) const
-    {
-        return RedistributeContext(psUndefined);
-    }
+virtual RedistributeContext getOutputDistribution(std::vector<RedistributeContext> const&, std::vector<ArrayDesc> const&) const
+{
+	return RedistributeContext(psUndefined);
+}
 #else
-    virtual ArrayDistribution getOutputDistribution(std::vector<ArrayDistribution> const&, std::vector<ArrayDesc> const&) const
-    {
-        return ArrayDistribution(psUndefined);
-    }
+virtual ArrayDistribution getOutputDistribution(std::vector<ArrayDistribution> const&, std::vector<ArrayDesc> const&) const
+{
+	return ArrayDistribution(psUndefined);
+}
 #endif
 
 
- size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
-    {
+size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
+{
 
-	 	InstanceID const myId    = query->getInstanceID();
-    	InstanceID const coordId = 0;
+	InstanceID const myId    = query->getInstanceID();
+	InstanceID const coordId = 0;
 
-    	size_t const numInstances = query->getInstancesCount();
-        size_t const scalarSize   = sizeof(size_t);
+	size_t const numInstances = query->getInstancesCount();
+	size_t const scalarSize   = sizeof(size_t);
 
 
-    	shared_ptr<SharedBuffer> bufsend(new MemoryBuffer( &(instancecount), scalarSize));
+	shared_ptr<SharedBuffer> bufsend(new MemoryBuffer( &(instancecount), scalarSize));
 
-        size_t tempcount;
-        shared_ptr<SharedBuffer> buf(new MemoryBuffer( &(tempcount), scalarSize));
+	size_t tempcount;
+	shared_ptr<SharedBuffer> buf(new MemoryBuffer( &(tempcount), scalarSize));
 
-    	size_t count = instancecount;
+	size_t count = instancecount;
 
-    	if(myId != coordId)
-    	{
-    		BufSend(coordId, bufsend, query);
-    	}
+	if(myId != coordId)
+	{
+		BufSend(coordId, bufsend, query);
+	}
 
-    	if(myId == coordId)
-    	{
+	if(myId == coordId)
+	{
 
-    		for(InstanceID i = 0; i<numInstances; ++i)
+		for(InstanceID i = 0; i<numInstances; ++i)
+		{
+			if (i == myId)
+			{
+				continue;
+			}
+
+			buf = BufReceive(i, query);
+
+			size_t tempcount;
+			memcpy(&tempcount, buf->getData(), scalarSize);
+
+			count = count + tempcount;
+		}
+	}
+
+
+	return count;
+}
+
+
+std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     		{
-    			if (i == myId)
-    			{
-    				continue;
-    			}
+	//FastCountSettings settings (_parameters, false, query);
 
-    			buf = BufReceive(i, query);
+	shared_ptr<Array>& input = inputArrays[0];
+	shared_ptr< Array> outArray;
 
-    			size_t tempcount;
-    			memcpy(&tempcount, buf->getData(), scalarSize);
+	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
+	size_t count = 0;
 
-    			count = count + tempcount;
+	while(!inputIterator-> end())
+	{
+
+		std::shared_ptr<ConstChunkIterator> inputChunkIterator = inputIterator->getChunk().getConstIterator();
+
+		ConstChunk const& chunk = inputChunkIterator->getChunk();
+		count+= chunk.count();
+
+		++(*inputIterator);
+	}
+
+	size_t remotecount =  exchangeCount(count, query);
+	shared_ptr<Array> outputArray(new MemArray(_schema, query));
+
+	if(query->getInstanceID() == 0)
+	{
+
+		shared_ptr<ArrayIterator> outputArrayIter = outputArray->getIterator(0);
+		Coordinates position(1,0);
+
+		shared_ptr<ChunkIterator> outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
+		outputChunkIter->setPosition(position);
+
+		Value value;
+		value.setUint64(remotecount);
+		outputChunkIter->writeItem(value);
+		outputChunkIter->flush();
+
+		return outputArray;
+
+	}
+
+	else
+	{
+		return outputArray;
+	}
+
+
     		}
-    	}
-
-
-    return count;
-    }
-
-
-    std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
-    {
-    	//FastCountSettings settings (_parameters, false, query);
-
-    	shared_ptr<Array>& input = inputArrays[0];
-    	shared_ptr< Array> outArray;
-
-    	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
-    	size_t count = 0;
-
-    	while(!inputIterator-> end())
-    	{
-
-    			std::shared_ptr<ConstChunkIterator> inputChunkIterator = inputIterator->getChunk().getConstIterator();
-
-    			ConstChunk const& chunk = inputChunkIterator->getChunk();
-    			count+= chunk.count();
-
-    			++(*inputIterator);
-    	}
-
-    	size_t remotecount =  exchangeCount(count, query);
-    	shared_ptr<Array> outputArray(new MemArray(_schema, query));
-
-    	if(query->getInstanceID() == 0)
-        {
-
-        	shared_ptr<ArrayIterator> outputArrayIter = outputArray->getIterator(0);
-        	Coordinates position(1,0);
-
-        	shared_ptr<ChunkIterator> outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
-        	outputChunkIter->setPosition(position);
-
-        	Value value;
-        	value.setUint64(remotecount);
-        	outputChunkIter->writeItem(value);
-        	outputChunkIter->flush();
-
-        	return outputArray;
-
-        }
-
-        else
-        {
-        	return outputArray;
-        }
-
-
-    }
 };
 
 REGISTER_PHYSICAL_OPERATOR_FACTORY(PhysicalFastCount, "fast_count", "PhysicalFastCount");
