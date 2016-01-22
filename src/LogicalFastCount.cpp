@@ -1,22 +1,24 @@
-/*
-**
-* BEGIN_COPYRIGHT
-*
-* PARADIGM4 INC.
-* This file is part of the Paradigm4 Enterprise SciDB distribution kit
-* and may only be used with a valid Paradigm4 contract and in accord
-* with the terms and conditions specified by that contract.
-*
-* Copyright (C) 2010 - 2015 Paradigm4 Inc.
-* All Rights Reserved.
-*
-* END_COPYRIGHT
-*/
+
+ #include <boost/algorithm/string.hpp>
+ #include <boost/lexical_cast.hpp>
+ #include <query/Operator.h>
+ #include <log4cxx/logger.h>
+
+ #ifdef CPP11
+ using std::shared_ptr;
+ #else
+ using boost::shared_ptr;
+ #endif
+
+ using boost::algorithm::trim;
+ using boost::starts_with;
+ using boost::lexical_cast;
+ using boost::bad_lexical_cast;
+
+ using namespace std;
 
 
-#include <query/Operator.h>
-
-#include "FastCountSettings.h"
+//#include "FastCountSettings.h"
 
 namespace scidb
 {
@@ -31,7 +33,7 @@ public:
         //ADD_PARAM_VARIES();
     }
 
-    std::vector<shared_ptr<OperatorParamPlaceholder> > nextVaryParamPlaceholder(const std::vector< ArrayDesc> &schemas)
+    /*std::vector<shared_ptr<OperatorParamPlaceholder> > nextVaryParamPlaceholder(const std::vector< ArrayDesc> &schemas)
     {
         std::vector<shared_ptr<OperatorParamPlaceholder> > res;
         res.push_back(END_OF_VARIES_PARAMS());
@@ -41,11 +43,12 @@ public:
         }
         return res;
     }
+*/
 
     ArrayDesc inferSchema(std::vector< ArrayDesc> schemas, shared_ptr< Query> query)
     {
         ArrayDesc const& inputSchema = schemas[0];
-        FastCountSettings settings (_parameters, true, query);
+        //FastCountSettings settings (_parameters, true, query);
         vector<DimensionDesc> dimensions(1);
         size_t const nInstances = query->getInstancesCount();
         dimensions[0] = DimensionDesc("i",    0, 0, CoordinateBounds::getMax(), CoordinateBounds::getMax(), 1, 0);

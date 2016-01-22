@@ -1,17 +1,3 @@
-/*
-**
-* BEGIN_COPYRIGHT
-*
-* PARADIGM4 INC.
-* This file is part of the Paradigm4 Enterprise SciDB distribution kit
-* and may only be used with a valid Paradigm4 contract and in accord
-* with the terms and conditions specified by that contract.
-*
-* Copyright (C) 2010 - 2015 Paradigm4 Inc.
-* All Rights Reserved.
-*
-* END_COPYRIGHT
-*/
 
 /**
  * @file PhysicalFastCount.cpp
@@ -19,10 +5,8 @@
    * @brief count using the chunk map instead of iteration over all chunks 
     *
      * @author Jonathan Rivers <jrivers96@gmail.com>
-      * @author poliocough@gmail.com
        * @author others
         */
-
 
 #include <limits>
 #include <sstream>
@@ -30,7 +14,6 @@
 #include <string>
 #include <vector>
 #include <ctype.h>
-
 
 #include <system/Exceptions.h>
 #include <system/SystemCatalog.h>
@@ -51,18 +34,30 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <fcntl.h>
-#include "FastCountSettings.h"
 
-#ifdef CPP11
-using std::make_shared;
-#else
-using boost::make_shared;
-#endif
+#include <log4cxx/logger.h>
 
-using std::make_shared;
-using boost::algorithm::is_from_range;
+
+ #ifdef CPP11
+ using std::shared_ptr;
+ using std::make_shared;
+ #else
+ using boost::shared_ptr;
+ using boost::make_shared;
+ #endif
+
+ using boost::algorithm::trim;
+ using boost::starts_with;
+ using boost::lexical_cast;
+ using boost::bad_lexical_cast;
+
+ using namespace std;
+
+ using boost::algorithm::is_from_range;
+
 
 namespace scidb
 {
@@ -158,7 +153,7 @@ public:
 
     std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     {
-    	FastCountSettings settings (_parameters, false, query);
+    	//FastCountSettings settings (_parameters, false, query);
 
     	shared_ptr<Array>& input = inputArrays[0];
     	shared_ptr< Array> outArray;
@@ -206,8 +201,6 @@ public:
 
     }
 };
-
-
 
 REGISTER_PHYSICAL_OPERATOR_FACTORY(PhysicalFastCount, "fast_count", "PhysicalFastCount");
 
