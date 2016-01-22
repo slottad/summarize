@@ -43,8 +43,6 @@ else
   endif
 endif
 
-#$(CXX) $(CFLAGS) $(INC) -o libmultisplit.so plugin.cpp LogicalSplit.cpp PhysicalSplit.cpp Functions.cpp $(LIBS)
-
 all:
 	@if test ! -d "$(SCIDB)"; then echo  "Error. Try:\n\nmake SCIDB=<PATH TO SCIDB INSTALL PATH>"; exit 1; fi
 	$(CXX) $(CFLAGS) $(INC) -o libfastcount.so $(SRCS) $(LIBS)
@@ -53,6 +51,7 @@ all:
 	@echo
 	@echo "Re-start SciDB if the plugin was already loaded previously."
 	@echo "Remember to copy the plugin to all your nodes in the cluster."
-
+test:
+	@./test.sh
 clean:
 	rm -f *.so *.o

@@ -28,6 +28,7 @@ echo 'count' >> ./test.expected
 echo '256' >> ./test.expected
 
 
-
-
 diff test.out test.expected
+
+exit 0
+
