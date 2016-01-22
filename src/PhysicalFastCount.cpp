@@ -121,9 +121,7 @@ public:
 
     	if(myId != coordId)
     	{
-    		//LOG4CXX_DEBUG(logger, "FASTCOUNT - BufSend the data");
     		BufSend(coordId, bufsend, query);
-    		//LOG4CXX_DEBUG(logger, "FASTCOUNT - EXIT BufSend the data");
     	}
 
     	if(myId == coordId)
@@ -135,13 +133,12 @@ public:
     			{
     				continue;
     			}
-    			//LOG4CXX_DEBUG(logger, "FASTCOUNT -BufReceive the data");
+
     			buf = BufReceive(i, query);
 
     			size_t tempcount;
     			memcpy(&tempcount, buf->getData(), scalarSize);
 
-    			//LOG4CXX_DEBUG(logger, "FASTCOUNT - BufReceive the data:" << foo);
     			count = count + tempcount;
     		}
     	}

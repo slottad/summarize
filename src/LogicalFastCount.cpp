@@ -33,18 +33,6 @@ public:
         //ADD_PARAM_VARIES();
     }
 
-    /*std::vector<shared_ptr<OperatorParamPlaceholder> > nextVaryParamPlaceholder(const std::vector< ArrayDesc> &schemas)
-    {
-        std::vector<shared_ptr<OperatorParamPlaceholder> > res;
-        res.push_back(END_OF_VARIES_PARAMS());
-        if (_parameters.size() < FastCountSettings::MAX_PARAMETERS)
-        {
-            res.push_back(PARAM_CONSTANT("string"));
-        }
-        return res;
-    }
-*/
-
     ArrayDesc inferSchema(std::vector< ArrayDesc> schemas, shared_ptr< Query> query)
     {
         ArrayDesc const& inputSchema = schemas[0];
