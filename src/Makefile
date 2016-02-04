@@ -45,7 +45,7 @@ endif
 
 all:
 	@if test ! -d "$(SCIDB)"; then echo  "Error. Try:\n\nmake SCIDB=<PATH TO SCIDB INSTALL PATH>"; exit 1; fi
-	$(CXX) $(CFLAGS) $(INC) -o libfastcount.so $(SRCS) $(LIBS)
+	$(CXX) $(CFLAGS) $(INC) -o libfast_count.so $(SRCS) $(LIBS)
 	@echo "Now copy *.so to your SciDB lib/scidb/plugins directory and run"
 	@echo "iquery -aq \"load_library('fast_count')\" # to load the plugin."
 	@echo
