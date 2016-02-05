@@ -1,6 +1,6 @@
 #!/bin/bash
 #Quick restart script for dev use
-iquery -aq "unload_library('fastcount')" > /dev/null 2>&1
+iquery -aq "unload_library('summarize')" > /dev/null 2>&1
 set -e
 
 DBNAME="mydb1"
@@ -13,7 +13,7 @@ pushd $mydir
 make SCIDB=$SCIDB_INSTALL
 
 scidb.py stopall $DBNAME 
-cp libfastcount.so ${SCIDB_INSTALL}/lib/scidb/plugins/
+cp libsummarize.so ${SCIDB_INSTALL}/lib/scidb/plugins/
 scidb.py startall $DBNAME 
 
-iquery -aq "load_library('fastcount')"
+iquery -aq "load_library('summarize')"

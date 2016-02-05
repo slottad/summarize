@@ -1,6 +1,6 @@
 
 /**
- * @file PhysicalFastCount.cpp
+ * @file PhysicalSummarize.cpp
  *
  * @brief count using the chunk map instead of iteration over all chunks
  *
@@ -62,7 +62,7 @@ using boost::algorithm::is_from_range;
 namespace scidb
 {
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scidb.fast_count"));
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scidb.summarize"));
 
 using namespace scidb;
 
@@ -74,10 +74,10 @@ static void EXCEPTION_ASSERT(bool cond)
 	}
 }
 
-class PhysicalFastCount : public PhysicalOperator
+class PhysicalSummarize : public PhysicalOperator
 {
 public:
-	PhysicalFastCount(std::string const& logicalName,
+	PhysicalSummarize(std::string const& logicalName,
 			std::string const& physicalName,
 			Parameters const& parameters,
 			ArrayDesc const& schema):
@@ -150,7 +150,7 @@ size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
 
 std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     		{
-	//FastCountSettings settings (_parameters, false, query);
+	//summarizeSettings settings (_parameters, false, query);
 
 	shared_ptr<Array>& input = inputArrays[0];
 	shared_ptr< Array> outArray;
@@ -199,7 +199,7 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
     		}
 };
 
-REGISTER_PHYSICAL_OPERATOR_FACTORY(PhysicalFastCount, "fast_count", "PhysicalFastCount");
+REGISTER_PHYSICAL_OPERATOR_FACTORY(PhysicalSummarize, "summarize", "PhysicalSummarize");
 
 
 } // end namespace scidb

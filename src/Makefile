@@ -25,7 +25,7 @@ endif
 #CFLAGS=-pedantic -W -Wextra -Wall -Wno-variadic-macros -Wno-strict-aliasing -Wno-long-long -Wno-unused-parameter -fPIC -D_STDC_FORMAT_MACROS -Wno-system-headers -isystem -g -ggdb3  -D_STDC_LIMIT_MACROS
 CFLAGS=-W -Wextra -Wall -Wno-unused-parameter -Wno-variadic-macros -Wno-strict-aliasing -Wno-long-long -Wno-unused -fPIC -D_STDC_FORMAT_MACROS -Wno-system-headers -isystem -O3 -g -DNDEBUG -D_STDC_LIMIT_MACROS
 INC=-I. -DPROJECT_ROOT="\"$(SCIDB)\"" -I"$(SCIDB_THIRDPARTY_PREFIX)/3rdparty/boost/include/" -I"$(SCIDB)/include"
-LIBS=-shared -Wl,-soname,libfast_count.so -L. -L"$(SCIDB_THIRDPARTY_PREFIX)/3rdparty/boost/lib" -L"$(SCIDB)/lib" -Wl,-rpath,$(SCIDB)/lib:$(RPATH) -lm
+LIBS=-shared -Wl,-soname,libsummarize.so -L. -L"$(SCIDB_THIRDPARTY_PREFIX)/3rdparty/boost/lib" -L"$(SCIDB)/lib" -Wl,-rpath,$(SCIDB)/lib:$(RPATH) -lm
 
 SRCS=plugin.cpp 
 # Compiler settings for SciDB version >= 15.7
@@ -33,21 +33,21 @@ ifneq ("$(wildcard /usr/bin/g++-4.9)","")
   CC := "/usr/bin/gcc-4.9"a
   CXX := "/usr/bin/g++-4.9"
   CFLAGS+=-std=c++11 -DCPP11
-  SRCS+= LogicalFastCount.cpp PhysicalFastCount.cpp
+  SRCS+= LogicalSummarize.cpp PhysicalSummarize.cpp
 else
   ifneq ("$(wildcard /opt/rh/devtoolset-3/root/usr/bin/gcc)","")
    CC := "/opt/rh/devtoolset-3/root/usr/bin/gcc"
    CXX := "/opt/rh/devtoolset-3/root/usr/bin/g++"
    CFLAGS+=-std=c++11 -DCPP11
-   SRCS+= LogicalFastCount.cpp PhysicalFastCount.cpp
+   SRCS+= LogicalSummarize.cpp PhysicalSummarize.cpp
   endif
 endif
 
 all:
 	@if test ! -d "$(SCIDB)"; then echo  "Error. Try:\n\nmake SCIDB=<PATH TO SCIDB INSTALL PATH>"; exit 1; fi
-	$(CXX) $(CFLAGS) $(INC) -o libfast_count.so $(SRCS) $(LIBS)
+	$(CXX) $(CFLAGS) $(INC) -o libsummarize.so $(SRCS) $(LIBS)
 	@echo "Now copy *.so to your SciDB lib/scidb/plugins directory and run"
-	@echo "iquery -aq \"load_library('fast_count')\" # to load the plugin."
+	@echo "iquery -aq \"load_library('summarize')\" # to load the plugin."
 	@echo
 	@echo "Re-start SciDB if the plugin was already loaded previously."
 	@echo "Remember to copy the plugin to all your nodes in the cluster."

@@ -12,18 +12,18 @@ rm test.expected
 touch ./test.expected
 
 
-iquery -o csv -aq "fast_count(zero_to_255)" >> test.out
+iquery -o csv -aq "summarize(zero_to_255)" >> test.out
 
 echo 'count' >> ./test.expected
 echo '256
 ' >> ./test.expected
 
-iquery -o csv -aq "fast_count(between(zero_to_255,0,9))" >> test.out
+iquery -o csv -aq "summarize(between(zero_to_255,0,9))" >> test.out
 
 echo 'count' >> ./test.expected
 echo '10' >> ./test.expected
 
-iquery -o csv -aq "fast_count(zero_to_255_overlap)" >> test.out
+iquery -o csv -aq "summarize(zero_to_255_overlap)" >> test.out
 echo 'count' >> ./test.expected
 echo '256' >> ./test.expected
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>fast_countv2</name>
+	<name>summarizev2</name>
 	<comment></comment>
 	<projects>
 		<project>scidb15.7</project>
