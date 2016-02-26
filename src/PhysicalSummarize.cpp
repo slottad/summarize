@@ -84,16 +84,18 @@ public:
 				PhysicalOperator(logicalName, physicalName, parameters, schema)
 {}
 
+   virtual RedistributeContext getOutputDistribution(std::vector<RedistributeContext> const&,
+	                                                      std::vector<ArrayDesc> const&) const
+    {
+	   return RedistributeContext(_schema.getDistribution(),
+	                              _schema.getResidency());
+    }
+
 	virtual bool changesDistribution(std::vector<ArrayDesc> const&) const
 	{
 		return true;
 	}
 
-
-virtual DistributionRequirement getDistributionRequirement (const std::vector< ArrayDesc> & inputSchemas) const
-    {
-        return DistributionRequirement(DistributionRequirement::Collocated);
-    }
 
 
 size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
@@ -159,9 +161,6 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 	shared_ptr<Array>& input = inputArrays[0];
 	shared_ptr< Array> outArray;
 
-
-
-
 	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
 	size_t count = 0;
 
@@ -173,7 +172,8 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 		ConstChunk const& chunk = inputIterator->getChunk();
 		count+= chunk.count();
 
-// we could use the first and last position and number of elements to figure out the average elements
+        // we could use the first and last position and number of
+		//elements to figure out the average elements
 
 		//chunk.getSize();
 		//chunk.getNumberOfElements();
