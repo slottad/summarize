@@ -89,17 +89,11 @@ public:
 		return true;
 	}
 
-#ifdef CPP11
-virtual RedistributeContext getOutputDistribution(std::vector<RedistributeContext> const&, std::vector<ArrayDesc> const&) const
-{
-	return RedistributeContext(psUndefined);
-}
-#else
-virtual ArrayDistribution getOutputDistribution(std::vector<ArrayDistribution> const&, std::vector<ArrayDesc> const&) const
-{
-	return ArrayDistribution(psUndefined);
-}
-#endif
+
+virtual DistributionRequirement getDistributionRequirement (const std::vector< ArrayDesc> & inputSchemas) const
+    {
+        return DistributionRequirement(DistributionRequirement::Collocated);
+    }
 
 
 size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
@@ -146,7 +140,17 @@ size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
 
 	return count;
 }
+// we could use the first and last position and number of elements to figure out the average elements
 
+//chunk.getSize();
+//chunk.getNumberOfElements();
+//chunk.getFirstPosition();
+//chunk.getLastPosition();
+
+//chunk counts (min max and average) and (usize,csize,asize)
+// attribute a
+// attribute b
+//total counts
 
 std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     		{
@@ -154,6 +158,9 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 
 	shared_ptr<Array>& input = inputArrays[0];
 	shared_ptr< Array> outArray;
+
+
+
 
 	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
 	size_t count = 0;
@@ -165,6 +172,16 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 
 		ConstChunk const& chunk = inputIterator->getChunk();
 		count+= chunk.count();
+
+// we could use the first and last position and number of elements to figure out the average elements
+
+		//chunk.getSize();
+		//chunk.getNumberOfElements();
+        //chunk.getFirstPosition();
+		//chunk.getLastPosition();
+
+        //chunk counts min max and average
+		//usize, csize, asize
 
 		++(*inputIterator);
 	}

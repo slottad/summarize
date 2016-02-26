@@ -43,7 +43,25 @@ public:
 		// dimensions[0] = DimensionDesc("i", 0, 0, nInstances-1, nInstances-1, 1, 0);
 		vector<AttributeDesc> attributes;
 		attributes.push_back(AttributeDesc((AttributeID)0, "count", TID_UINT64, AttributeDesc::IS_NULLABLE, 0));
-		return ArrayDesc("summarize", attributes, dimensions, defaultPartitioning());
+		return ArrayDesc("summarize", attributes, dimensions, defaultPartitioning(), query->getDefaultArrayResidency());
+
+		/* ArrayDesc(const std::string &arrayName,
+		              const Attributes& attributes,
+		              const Dimensions &dimensions,
+		              const ArrayDistPtr& arrDist,
+		              const ArrayResPtr& arrRes,
+		              int32_t flags = 0);
+
+		*/
+		/* ArrayDesc(const std::string &namespaceName,
+		              const std::string &arrayName,
+		              const Attributes& attributes,
+		              const Dimensions &dimensions,
+		              const ArrayDistPtr& arrDist,
+		              const ArrayResPtr& arrRes,
+		              int32_t flags = 0);
+
+		 */
 	}
 };
 
