@@ -3,10 +3,11 @@
 iquery -aq "unload_library('summarize')" > /dev/null 2>&1
 set -e
 
-DBNAME="mydb1"
+DBNAME="test_dbname"
 #This is easily sym-linkable: ~/scidb
-SCIDB_INSTALL=$SCIDB_INSTALL_PATH
-export SCIDB_THIRDPARTY_PREFIX="/opt/scidb/15.7"
+
+SCIDB_INSTALL=$SCIDB
+export SCIDB_THIRDPARTY_PREFIX="/opt/scidb/15.12"
 
 mydir=`dirname $0`
 pushd $mydir

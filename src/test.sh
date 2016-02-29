@@ -1,5 +1,11 @@
 #!/bin/bash
 
+
+iquery -aq "store(build(<val:double>[i=0:3,4,0,j=0:3,4,0],i*4+j),foo)"
+
+
+
+
 iquery -anq "remove(zero_to_255)"                > /dev/null 2>&1
 
 iquery -anq "store( build( <val:string> [x=0:255,10,0],  string(x % 256) ), zero_to_255 )"  > /dev/null 2>&1

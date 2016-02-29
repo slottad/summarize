@@ -96,26 +96,50 @@ public:
 		return true;
 	}
 
+struct pack {
+	  size_t min;
+	  size_t max;
+	  size_t count;
+	};
+
+struct summary {
+		  size_t min;
+		  size_t max;
+		  size_t count;
+		  double avg;
+	} ;
 
 
-size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
+summary exchangeVals(size_t instancemin, size_t instancemax, size_t instancecount, shared_ptr<Query>& query)
 {
 
 	InstanceID const myId    = query->getInstanceID();
 	InstanceID const coordId = 0;
 
 	size_t const numInstances = query->getInstancesCount();
+
+    pack sendbuf;
+    pack tempbuf;
+
+	sendbuf.count = instancecount;
+	sendbuf.min   = instancemin;
+	sendbuf.max   = instancemax;
+
+
 	size_t const scalarSize   = sizeof(size_t);
+	size_t const bufSize      = sizeof(sendbuf);
 
+	shared_ptr<SharedBuffer> bufsend(new MemoryBuffer( &(sendbuf), bufSize));
 
-	shared_ptr<SharedBuffer> bufsend(new MemoryBuffer( &(instancecount), scalarSize));
+	shared_ptr<SharedBuffer> buf(new MemoryBuffer( &(tempbuf), bufSize));
 
-	size_t tempcount;
-	shared_ptr<SharedBuffer> buf(new MemoryBuffer( &(tempcount), scalarSize));
+	summary output;
+	output.count = instancecount;
+	output.max = 0;
+	output.min = SIZE_MAX;
+    output.avg = 0.0;
 
-	size_t count = instancecount;
-
-	if(myId != coordId)
+    if(myId != coordId)
 	{
 		BufSend(coordId, bufsend, query);
 	}
@@ -132,27 +156,25 @@ size_t exchangeCount(size_t instancecount, shared_ptr<Query>& query)
 
 			buf = BufReceive(i, query);
 
-			size_t tempcount;
-			memcpy(&tempcount, buf->getData(), scalarSize);
+			memcpy(&tempbuf, buf->getData(), bufSize);
 
-			count = count + tempcount;
+			output.count = output.count + tempbuf.count;
+
+			if(output.min > tempbuf.count )
+		        output.min = tempbuf.count;
+
+			if(output.max < tempbuf.count )
+		         output.max = tempbuf.count;
 		}
+
+		output.avg = (double)output.count/(double)numInstances;
+
 	}
 
 
-	return count;
+	return output;
 }
-// we could use the first and last position and number of elements to figure out the average elements
 
-//chunk.getSize();
-//chunk.getNumberOfElements();
-//chunk.getFirstPosition();
-//chunk.getLastPosition();
-
-//chunk counts (min max and average) and (usize,csize,asize)
-// attribute a
-// attribute b
-//total counts
 
 std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     		{
@@ -162,23 +184,25 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 	shared_ptr< Array> outArray;
 
 	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
+
 	size_t count = 0;
+	size_t min = SIZE_MAX;
+	size_t max = 0;
+	double average = 0;
+    size_t temp;
 
 	while(!inputIterator-> end())
 	{
 
-		//std::shared_ptr<ConstChunkIterator> inputChunkIterator = inputIterator->getChunk().getConstIterator();
-
 		ConstChunk const& chunk = inputIterator->getChunk();
-		count+= chunk.count();
+	    temp = chunk.count();
+		count+= temp;
 
-        // we could use the first and last position and number of
-		//elements to figure out the average elements
+		if(min > temp )
+        	min = temp;
 
-		//chunk.getSize();
-		//chunk.getNumberOfElements();
-        //chunk.getFirstPosition();
-		//chunk.getLastPosition();
+		if(max < temp )
+            max = temp;
 
         //chunk counts min max and average
 		//usize, csize, asize
@@ -186,20 +210,51 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 		++(*inputIterator);
 	}
 
-	size_t remotecount =  exchangeCount(count, query);
+	stringstream ss;
+	ss << "SUMMARIZEDEBUG, preExchange: min():" << min << ", max():" << max << ",count():" << count;
+	LOG4CXX_DEBUG (logger, ss.str());
+
+	summary remoteval =  exchangeVals(min,max,count,query);
+
+	ss << "SUMMARIZEDEBUG, postExchange: min():" << remoteval.min << ", max():" << remoteval.max << ",count():" << remoteval.count;
+	LOG4CXX_DEBUG (logger, ss.str());
+
 	shared_ptr<Array> outputArray(new MemArray(_schema, query));
 
 	if(query->getInstanceID() == 0)
 	{
+		Value value;
 
 		shared_ptr<ArrayIterator> outputArrayIter = outputArray->getIterator(0);
 		Coordinates position(1,0);
-
 		shared_ptr<ChunkIterator> outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
 		outputChunkIter->setPosition(position);
 
-		Value value;
-		value.setUint64(remotecount);
+		value.setUint64(remoteval.count);
+		outputChunkIter->writeItem(value);
+		outputChunkIter->flush();
+
+		outputArrayIter = outputArray->getIterator(1);
+		outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
+		outputChunkIter->setPosition(position);
+
+		value.setUint64(remoteval.min);
+		outputChunkIter->writeItem(value);
+		outputChunkIter->flush();
+
+		outputArrayIter = outputArray->getIterator(2);
+		outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
+		outputChunkIter->setPosition(position);
+
+		value.setUint64(remoteval.max);
+		outputChunkIter->writeItem(value);
+		outputChunkIter->flush();
+
+		outputArrayIter = outputArray->getIterator(3);
+		outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
+		outputChunkIter->setPosition(position);
+
+		value.setDouble(remoteval.avg);
 		outputChunkIter->writeItem(value);
 		outputChunkIter->flush();
 
@@ -213,7 +268,7 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
 	}
 
 
-    		}
+   }
 };
 
 REGISTER_PHYSICAL_OPERATOR_FACTORY(PhysicalSummarize, "summarize", "PhysicalSummarize");
