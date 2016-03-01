@@ -36,6 +36,12 @@
 #include <boost/unordered_map.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+// Provide an implementation of serialize for std::list
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/vector.hpp>
+
 #include <fcntl.h>
 
 #include <log4cxx/logger.h>
@@ -97,55 +103,97 @@ public:
 	}
 
 struct pack {
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/)
+  {
+    ar & attid;
+    ar & min;
+    ar & max;
+    ar & count;
+    ar & numchunks;
+  }
+public:
+
+	  long attid;
 	  size_t min;
 	  size_t max;
 	  size_t count;
-	};
+      size_t numchunks;
+      double avg;
+};
 
 struct summary {
-		  size_t min;
-		  size_t max;
-		  size_t count;
-		  double avg;
+		  std::vector<long> attid;
+	      std::vector<size_t> min;
+		  std::vector<size_t> max;
+		  std::vector<size_t> count;
+		  std::vector<double> avg;
 	} ;
 
 
-summary exchangeVals(size_t instancemin, size_t instancemax, size_t instancecount, shared_ptr<Query>& query)
+class packbin
+{
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/)
+  {
+    // This is the only thing you have to implement to serialize a std::list<foo>
+    ar & value;
+    // if we had more members here just & each of them with ar
+  }
+public:
+  pack value;
+};
+
+bool exchangeVals(std::vector<packbin> &instancepack, shared_ptr<Query>& query)
 {
 
+	stringstream ss;
+	ss << "SUMMARIZEDEBUG, exchangeVals():" << std::endl;
+	LOG4CXX_DEBUG (logger, ss.str());
+
+	size_t numAtt = instancepack.size();
 	InstanceID const myId    = query->getInstanceID();
 	InstanceID const coordId = 0;
 
 	size_t const numInstances = query->getInstancesCount();
 
-    pack sendbuf;
-    pack tempbuf;
+	/*
+    summary aggstats;
 
-	sendbuf.count = instancecount;
-	sendbuf.min   = instancemin;
-	sendbuf.max   = instancemax;
+    aggstats.attid.reserve(numAtt);
+	aggstats.avg.reserve(numAtt);
+	aggstats.count.reserve(numAtt);
+	aggstats.max.reserve(numAtt);
+	aggstats.min.reserve(numAtt);
+    */
 
+	shared_ptr<SharedBuffer> buf;
 
-	size_t const scalarSize   = sizeof(size_t);
-	size_t const bufSize      = sizeof(sendbuf);
-
-	shared_ptr<SharedBuffer> bufsend(new MemoryBuffer( &(sendbuf), bufSize));
-
-	shared_ptr<SharedBuffer> buf(new MemoryBuffer( &(tempbuf), bufSize));
-
-	summary output;
-	output.count = instancecount;
-	output.max = 0;
-	output.min = SIZE_MAX;
-    output.avg = 0.0;
-
-    if(myId != coordId)
+	if(myId != coordId)
 	{
+		std::stringstream out;
+		// serialize into the stream
+		boost::archive::binary_oarchive oa(out);
+		oa << instancepack;
+
+		out.seekg(0, ios::end);
+		size_t bufSize = out.tellg();
+		out.seekg(0,ios::beg);
+
+		auto tmp = out.str();
+		const char* cstr = tmp.c_str();
+
+		shared_ptr<SharedBuffer> bufsend(new MemoryBuffer(cstr, bufSize));
 		BufSend(coordId, bufsend, query);
 	}
 
 	if(myId == coordId)
 	{
+
 
 		for(InstanceID i = 0; i<numInstances; ++i)
 		{
@@ -156,113 +204,171 @@ summary exchangeVals(size_t instancemin, size_t instancemax, size_t instancecoun
 
 			buf = BufReceive(i, query);
 
-			memcpy(&tempbuf, buf->getData(), bufSize);
+			//ss << "SUMMARIZEDEBUG, bufrecieve: " << std::to_string((int)i) << std::endl;
+			//LOG4CXX_DEBUG (logger, ss.str());
 
-			output.count = output.count + tempbuf.count;
+			std::string bufstring((const char *)buf->getConstData(), buf->getSize());
+			std::stringstream ssout;
+			ssout << bufstring;
 
-			if(output.min > tempbuf.count )
-		        output.min = tempbuf.count;
+			boost::archive::binary_iarchive ia(ssout);
+			std::vector<packbin> newlist;
+			ia >> newlist;
 
-			if(output.max < tempbuf.count )
-		         output.max = tempbuf.count;
+			std::vector<packbin>::size_type sz = newlist.size();
+            //TODO:assert that the coord vector and slave vectors are equal in size or error out.
+
+			// assign some values:
+			  for (unsigned i=0; i<sz; i++)
+			  {
+                instancepack[i].value.count += newlist[i].value.count;
+                instancepack[i].value.numchunks += newlist[i].value.numchunks;
+
+                if(instancepack[i].value.max < newlist[i].value.max)
+                	instancepack[i].value.max = newlist[i].value.max;
+
+                if(instancepack[i].value.min > newlist[i].value.min)
+                	instancepack[i].value.min = newlist[i].value.min;
+
+			  }
+
+			//ss << "SUMMARIZEDEBUG, coordreceive: " << std::to_string((int)i) << ",front():attid:" << newlist.front().value.attid << " count:" << std::to_string((int)newlist.front().value.count) <<std::endl;
+			//LOG4CXX_DEBUG (logger, ss.str());
+            //delete [] token;
+			//ssout.clear();
+
 		}
 
-		output.avg = (double)output.count/(double)numInstances;
+		std::vector<packbin>::size_type sz = instancepack.size();
+		for (unsigned i=0; i<sz; i++)
+		{
+			instancepack[i].value.avg = (double)instancepack[i].value.count/ (double)instancepack[i].value.numchunks;
+		}
 
 	}
 
 
-	return output;
+
+	return true;
 }
 
 
 std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
     		{
 	//summarizeSettings settings (_parameters, false, query);
-
-	shared_ptr<Array>& input = inputArrays[0];
+	 stringstream ss;
+	 ss << "SUMMARIZEDEBUG,Begin execution" << std::endl;
+	 LOG4CXX_DEBUG (logger, ss.str());
+	 shared_ptr<Array>& inputArray = inputArrays[0];
 	shared_ptr< Array> outArray;
 
-	std::shared_ptr<ConstArrayIterator> inputIterator = input->getConstIterator(0);
+	size_t numAtt = inputArray->getArrayDesc().getAttributes().size()-1;
+	std::vector<shared_ptr<ConstArrayIterator> > iaiters(numAtt, NULL);
+	//vector<shared_ptr<ConstChunkIterator> > iciters(numAtt, NULL);
+	//vector<Value const*> inputVal(numAtt, NULL);
+    //std::vector<pack>sendList;
+    // sendList.reserve(sizeof(pack) * numAtt);
+    std::vector<packbin> sendList;
+    sendList.reserve(numAtt);
 
-	size_t count = 0;
-	size_t min = SIZE_MAX;
-	size_t max = 0;
-	double average = 0;
+    packbin listPack;
+    pack* listPackref =  &(listPack.value);
+
+	iaiters[0] = inputArray->getConstIterator(numAtt);
+
+	ss << "SUMMARIZEDEBUG,for loop" << std::endl;
+	LOG4CXX_DEBUG (logger, ss.str());
+
+	for(size_t a=0; a<numAtt; ++a)
+        {
+            iaiters[a] = inputArray->getConstIterator( a);
+
+
+    listPackref->count = 0;
+	listPackref->min = SIZE_MAX;
+	listPackref->max = 0;
+	listPackref->numchunks = 0;
     size_t temp;
 
-	while(!inputIterator-> end())
+	while(!iaiters[a]-> end())
 	{
 
-		ConstChunk const& chunk = inputIterator->getChunk();
+		ConstChunk const& chunk = iaiters[a]->getChunk();
 	    temp = chunk.count();
-		count+= temp;
 
-		if(min > temp )
-        	min = temp;
+	    listPackref->count+= temp;
+		listPackref->numchunks += 1;
 
-		if(max < temp )
-            max = temp;
+		if(listPackref->min > temp )
+        	listPackref->min = temp;
+
+		if(listPackref->max < temp )
+            listPackref->max = temp;
 
         //chunk counts min max and average
 		//usize, csize, asize
 
-		++(*inputIterator);
+		++(*iaiters[a]);
 	}
+    listPackref->attid = a;
+	sendList.push_back(listPack);
+   }
 
-	stringstream ss;
-	ss << "SUMMARIZEDEBUG, preExchange: min():" << min << ", max():" << max << ",count():" << count;
+	ss << "SUMMARIZEDEBUG, Before exchangevals" << std::endl;
 	LOG4CXX_DEBUG (logger, ss.str());
 
-	summary remoteval =  exchangeVals(min,max,count,query);
+	bool rtnval = exchangeVals(sendList,query);
 
-	ss << "SUMMARIZEDEBUG, postExchange: min():" << remoteval.min << ", max():" << remoteval.max << ",count():" << remoteval.count;
-	LOG4CXX_DEBUG (logger, ss.str());
+	//summary remoteval;
+	//ss << "SUMMARIZEDEBUG, postExchange: min():" << remoteval.min << ", max():" << remoteval.max << ",count():" << remoteval.count;
+	//LOG4CXX_DEBUG (logger, ss.str());
 
 	shared_ptr<Array> outputArray(new MemArray(_schema, query));
 
 	if(query->getInstanceID() == 0)
 	{
-		Value value;
+
+		for(size_t a=0; a<numAtt; ++a)
+		   {
+
+			Value value;
 
 		shared_ptr<ArrayIterator> outputArrayIter = outputArray->getIterator(0);
 		Coordinates position(1,0);
+		position[0] = a;
 		shared_ptr<ChunkIterator> outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
 		outputChunkIter->setPosition(position);
-
-		value.setUint64(remoteval.count);
+		value.setUint64(sendList[a].value.count);
 		outputChunkIter->writeItem(value);
 		outputChunkIter->flush();
 
 		outputArrayIter = outputArray->getIterator(1);
 		outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
 		outputChunkIter->setPosition(position);
-
-		value.setUint64(remoteval.min);
+		value.setUint64(sendList[a].value.min);
 		outputChunkIter->writeItem(value);
 		outputChunkIter->flush();
 
 		outputArrayIter = outputArray->getIterator(2);
 		outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
 		outputChunkIter->setPosition(position);
-
-		value.setUint64(remoteval.max);
+		value.setUint64(sendList[a].value.max);
 		outputChunkIter->writeItem(value);
 		outputChunkIter->flush();
 
 		outputArrayIter = outputArray->getIterator(3);
 		outputChunkIter = outputArrayIter->newChunk(position).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
 		outputChunkIter->setPosition(position);
-
-		value.setDouble(remoteval.avg);
+		value.setDouble(sendList[a].value.avg);
 		outputChunkIter->writeItem(value);
 		outputChunkIter->flush();
-
+	}
 		return outputArray;
 
 	}
 
 	else
+
 	{
 		return outputArray;
 	}

@@ -39,7 +39,7 @@ public:
 		//summarizeSettings settings (_parameters, true, query);
 		vector<DimensionDesc> dimensions(1);
 		size_t const nInstances = query->getInstancesCount();
-		dimensions[0] = DimensionDesc("i",    0, 0, CoordinateBounds::getMax(), CoordinateBounds::getMax(), 1, 0);
+		dimensions[0] = DimensionDesc("attid",    0, 0, CoordinateBounds::getMax(), CoordinateBounds::getMax(), 1, 0);
 		// dimensions[0] = DimensionDesc("i", 0, 0, nInstances-1, nInstances-1, 1, 0);
 		vector<AttributeDesc> attributes;
 		attributes.push_back(AttributeDesc((AttributeID)0, "count", TID_UINT64, AttributeDesc::IS_NULLABLE, 0));
