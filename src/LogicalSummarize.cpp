@@ -1,8 +1,35 @@
 
+/*
+**
+* BEGIN_COPYRIGHT
+*
+* Copyright (C) 2008-2016 SciDB, Inc.
+* All Rights Reserved.
+*
+* summarize is a plugin for SciDB, an Open Source Array DBMS maintained
+* by Paradigm4. See http://www.paradigm4.com/
+*
+* accelerated_io_tools is free software: you can redistribute it and/or modify
+* it under the terms of the AFFERO GNU General Public License as published by
+* the Free Software Foundation.
+*
+* accelerated_io_tools is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+* INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+* NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+* the AFFERO GNU General Public License for the complete license terms.
+*
+* You should have received a copy of the AFFERO GNU General Public License
+* along with accelerated_io_tools.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+*
+* END_COPYRIGHT
+*/
+
+
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <query/Operator.h>
 #include <log4cxx/logger.h>
+#include "SummarizeSettings.h"
 
 #ifdef CPP11
 using std::shared_ptr;
@@ -17,56 +44,23 @@ using boost::bad_lexical_cast;
 
 using namespace std;
 
+namespace scidb {
 
-//#include "summarizeSettings.h"
-
-namespace scidb
-{
-
-class LogicalSummarize : public  LogicalOperator
+class LogicalSummarize: public LogicalOperator
 {
 public:
-	LogicalSummarize(const std::string& logicalName, const std::string& alias):
-		LogicalOperator(logicalName, alias)
-{
-		ADD_PARAM_INPUT();
-		//ADD_PARAM_VARIES();
-}
+    LogicalSummarize(const std::string& logicalName, const std::string& alias) :
+            LogicalOperator(logicalName, alias)
+    {
+        ADD_PARAM_INPUT();
+    }
 
-	ArrayDesc inferSchema(std::vector< ArrayDesc> schemas, shared_ptr< Query> query)
-	{
-		ArrayDesc const& inputSchema = schemas[0];
-		//summarizeSettings settings (_parameters, true, query);
-		vector<DimensionDesc> dimensions(1);
-		size_t const nInstances = query->getInstancesCount();
-		dimensions[0] = DimensionDesc("attid",    0, 0, CoordinateBounds::getMax(), CoordinateBounds::getMax(), 1, 0);
-		// dimensions[0] = DimensionDesc("i", 0, 0, nInstances-1, nInstances-1, 1, 0);
-		vector<AttributeDesc> attributes;
-		attributes.push_back(AttributeDesc((AttributeID)0, "count", TID_UINT64, AttributeDesc::IS_NULLABLE, 0));
-		attributes.push_back(AttributeDesc((AttributeID)1, "min", TID_UINT64, AttributeDesc::IS_NULLABLE, 0));
-		attributes.push_back(AttributeDesc((AttributeID)2, "max", TID_UINT64, AttributeDesc::IS_NULLABLE, 0));
-		attributes.push_back(AttributeDesc((AttributeID)3, "avg", TID_DOUBLE, AttributeDesc::IS_NULLABLE, 0));
-
-		return ArrayDesc("summarize", attributes, dimensions, defaultPartitioning(), query->getDefaultArrayResidency());
-
-		/* ArrayDesc(const std::string &arrayName,
-		              const Attributes& attributes,
-		              const Dimensions &dimensions,
-		              const ArrayDistPtr& arrDist,
-		              const ArrayResPtr& arrRes,
-		              int32_t flags = 0);
-
-		*/
-		/* ArrayDesc(const std::string &namespaceName,
-		              const std::string &arrayName,
-		              const Attributes& attributes,
-		              const Dimensions &dimensions,
-		              const ArrayDistPtr& arrDist,
-		              const ArrayResPtr& arrRes,
-		              int32_t flags = 0);
-
-		 */
-	}
+    ArrayDesc inferSchema(std::vector<ArrayDesc> schemas, shared_ptr<Query> query)
+    {
+        ArrayDesc const& inputSchema = schemas[0];
+        summarize::Settings settings(inputSchema, _parameters, true, query);
+        return settings.getSchema(query);
+    }
 };
 
 REGISTER_LOGICAL_OPERATOR_FACTORY(LogicalSummarize, "summarize");
