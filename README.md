@@ -5,6 +5,7 @@ Usage Example:
 
 iquery -aq "summarize(A)"
 {instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes
+
 {0,0} 'a',11,177,1,11,11,11,177,177,177
 
 {0,1} 'c',11,176,1,11,11,11,176,176,176
@@ -47,6 +48,7 @@ iquery -aq "summarize(A)"
 
 iquery -aq "summarize(A,'per_instance=1')"
 {instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes
+
 {0,0} '',44,561,4,11,11,11,48,140.25,177
 
 {1,0} '',12,342,4,3,3,3,48,85.5,102
@@ -59,6 +61,7 @@ iquery -aq "summarize(A,'per_instance=1')"
 
 iquery -aq "summarize(A,'per_attribute=1')"
 {instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes
+
 {0,0} 'a',40,720,5,3,8,11,102,144,177
 
 {0,1} 'c',40,712,5,3,8,11,96,142.4,176
