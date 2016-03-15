@@ -1,7 +1,7 @@
-summarize
+##summarize
 ==========
 
-Usage Example:
+###Usage Example:
 
 **iquery -aq "summarize(A)"
 {instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes**
