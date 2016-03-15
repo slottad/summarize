@@ -3,9 +3,9 @@
 
 ###Usage Example:
 
-**iquery -aq "summarize(A)"
+**iquery -aq "summarize(A)"**
 
-{instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes**
+{instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes
 
 {0,0} 'a',11,177,1,11,11,11,177,177,177
 
@@ -47,7 +47,7 @@
 
 {4,3} 'EmptyTag',7,48,1,7,7,7,48,48,48
 
-**iquery -aq "summarize(A,'per_instance=1')"
+**iquery -aq "summarize(A,'per_instance=1')"**
 
 {instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes**
 
@@ -61,7 +61,7 @@
 
 {4,0} '',28,448,4,7,7,7,48,112,144
 
-**iquery -aq "summarize(A,'per_attribute=1')"
+**iquery -aq "summarize(A,'per_attribute=1')"**
 
 {instance_id,attribute_id} att_name,total_count,total_bytes,num_chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes**
 
