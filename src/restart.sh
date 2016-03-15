@@ -3,7 +3,7 @@
 iquery -aq "unload_library('summarize')" > /dev/null 2>&1
 set -e
 
-DBNAME="mydb"
+DBNAME="test_dbname"
 #This is easily sym-linkable: ~/scidb
 
 SCIDB_INSTALL=$SCIDB
