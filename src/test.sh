@@ -9,15 +9,15 @@ rm test.out
 rm test.expected
 touch ./test.expected
 
-iquery -o csv:l -aq "aggregate(filter(summarize(zero_to_255), attribute_id=0), sum(total_count) as count)" >> test.out
+iquery -o csv:l -aq "aggregate(filter(summarize(zero_to_255), attid=0), sum(count) as count)" >> test.out
 echo 'count' >> ./test.expected
 echo '256' >> ./test.expected
 
-iquery -o csv:l -aq "aggregate(filter(summarize(between(zero_to_255,0,9)), attribute_id=0), sum(total_count) as count)" >> test.out
+iquery -o csv:l -aq "aggregate(filter(summarize(between(zero_to_255,0,9)), attid=0), sum(count) as count)" >> test.out
 echo 'count' >> ./test.expected
 echo '10' >> ./test.expected
 
-iquery -o csv:l -aq "aggregate(filter(summarize(zero_to_255_overlap), attribute_id=0), sum(total_count) as count)" >> test.out
+iquery -o csv:l -aq "aggregate(filter(summarize(zero_to_255_overlap), attid=0), sum(count) as count)" >> test.out
 echo 'count' >> ./test.expected
 echo '256' >> ./test.expected
 

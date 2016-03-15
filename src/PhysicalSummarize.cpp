@@ -88,10 +88,7 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
             ++(*iaiters[i]);
         }
     }
-    if(settings.perAttributeflag() || settings.perInstanceflag())
-    {
-    	    summary.finalSummary(settings, _schema, query);
-    }
+    summary.makeFinalSummary(settings, _schema, query);
     return summary.toArray(settings, _schema, query);
 }
 };
