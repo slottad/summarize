@@ -231,7 +231,6 @@ public:
     {}
 };
 
-
 struct InstanceSummary
 {
     InstanceID myInstanceId;
@@ -298,7 +297,7 @@ struct InstanceSummary
             }
             else
             {
-                SummaryTuple globalSummary("all attributes");
+                SummaryTuple globalSummary("all");
                 for(size_t att =0; att<summaryData.size(); ++att)
                 {
                     SummaryTuple& t = summaryData[att];
@@ -433,7 +432,7 @@ struct InstanceSummary
         else if(perIns && !perAtt)
         {
             std::vector<SummaryTuple>::size_type sz = summaryData.size();
-            SummaryTuple instanceSummary("all attributes");
+            SummaryTuple instanceSummary("all");
             for (unsigned att=0; att<sz; att++)
             {
                 if(att == 0)
