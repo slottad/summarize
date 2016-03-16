@@ -8,11 +8,11 @@
 * summarize is a plugin for SciDB, an Open Source Array DBMS maintained
 * by Paradigm4. See http://www.paradigm4.com/
 *
-* accelerated_io_tools is free software: you can redistribute it and/or modify
+* summarize is free software: you can redistribute it and/or modify
 * it under the terms of the AFFERO GNU General Public License as published by
 * the Free Software Foundation.
 *
-* accelerated_io_tools is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+* summarize is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
 * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
 * NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
 * the AFFERO GNU General Public License for the complete license terms.
