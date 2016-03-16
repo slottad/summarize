@@ -62,7 +62,7 @@ Described as follows:
 #Comparison to Other Tools
 Summarize is one of several ways to get chunk sizing. We'll list some advantages and disadvantages.
 ##Advantages:
- * Very quick: data is gathered from chunk headers and materialized chunks are not scanned off disk. For very large arrays, `op_count` may take a while and `summarize` will perform much faster.
+ * Very quick: data is gathered from chunk headers and materialized chunks are not scanned off disk. For arrays exceeding tens of terabytes, `op_count` may take a while and `summarize` will perform much faster.
  * Does not require stored arrays: for example, `summarize(apply(temp, b, random()))` is possible. The user can thus avoid a store operation. However, an implicit materialization - full or partial, depending on the query - still happens as this is executed.
  * Easy to summarize the latest version of an array. `list('chunk map')` is good at describing how much total space an array takes up, but to find the size of the most recent version, the query is much more complicated.
  * Measures exactly the binary size of SciDB's internal RLE format.
