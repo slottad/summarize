@@ -1,5 +1,4 @@
 #Summarize
-==========
 Compute quick chunk density, size and skew statistics over SciDB arrays.
 
 #Example
