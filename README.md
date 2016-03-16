@@ -12,7 +12,7 @@ $ iquery -aq "summarize(temp)"
 ```
 
 #Options
-Summarize accepts string-style options of `per_attribute=1` and `per_instance=1` which can be combined:
+Summarize accepts string-style boolean flag options of `per_attribute` and `per_instance` which both default to `0` and can be combined:
 ```
 $ iquery -aq "summarize(temp, 'per_instance=1')"
 {inst,attid} att,count,bytes,chunks,min_count,avg_count,max_count,min_bytes,avg_bytes,max_bytes
