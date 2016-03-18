@@ -172,7 +172,7 @@ public:
         attributes.push_back(AttributeDesc((AttributeID) 8, "avg_bytes",   TID_DOUBLE, AttributeDesc::IS_NULLABLE, 0));
         attributes.push_back(AttributeDesc((AttributeID) 9, "max_bytes",   TID_UINT64, AttributeDesc::IS_NULLABLE, 0));
         attributes = addEmptyTagAttribute(attributes);
-        return ArrayDesc("summarize", attributes, dimensions, defaultPartitioning(), query->getDefaultArrayResidency());
+        return ArrayDesc("summarize", attributes, dimensions, defaultPartitioning());
     }
 
     static const size_t NUM_OUTPUT_ATTRIBUTES = 10;

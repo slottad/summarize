@@ -62,7 +62,7 @@ public:
             std::vector<RedistributeContext> const& inputDistributions,
             std::vector< ArrayDesc> const& inputSchemas) const
  {
-     return RedistributeContext(createDistribution(psUndefined), _schema.getResidency() );
+     return RedistributeContext( psUndefined );
  }
 
 std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
