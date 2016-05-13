@@ -273,7 +273,6 @@ struct InstanceSummary
 
     bool makeFinalSummary(Settings const&settings, ArrayDesc const& schema, shared_ptr<Query>& query)
     {
-        size_t numAtt = Settings::NUM_OUTPUT_ATTRIBUTES;
         InstanceID const myId    = query->getInstanceID();
         InstanceID const coordId = query->getCoordinatorID() == INVALID_INSTANCE ? myId : query->getCoordinatorID();
         size_t const numInstances = query->getInstancesCount();
@@ -471,14 +470,11 @@ struct InstanceSummary
         {
             return outputArray;
         }
-        InstanceID const myId    = query->getInstanceID();
-        InstanceID const coordId = 0;
         Coordinates position(2,0);
-        size_t numInstances    = query->getInstancesCount();
         position[0]=myInstanceId;
         vector<shared_ptr<ArrayIterator> > oaiters(Settings::NUM_OUTPUT_ATTRIBUTES);
         vector<shared_ptr<ChunkIterator> > ociters(Settings::NUM_OUTPUT_ATTRIBUTES);
-        for(size_t oatt = 0; oatt<Settings::NUM_OUTPUT_ATTRIBUTES; ++oatt)
+        for(AttributeID oatt = 0; oatt<Settings::NUM_OUTPUT_ATTRIBUTES; ++oatt)
         {
             oaiters[oatt] = outputArray->getIterator(oatt);
             ociters[oatt] = oaiters[oatt]->newChunk(position).getIterator(query, oatt == 0 ?
@@ -518,10 +514,10 @@ struct InstanceSummary
             }
             else
             {
-                double avgChunkCount = t.totalCount * 1.0 / t.numChunks;
+                double avgChunkCount = static_cast<double>(t.totalCount) * 1.0 / static_cast<double>(t.numChunks);
                 if(settings.perAttributeflag() == false)
                 {
-                    avgChunkCount = avgChunkCount * settings.numInputAttributes();
+                    avgChunkCount = avgChunkCount * static_cast<double>(settings.numInputAttributes());
                 }
                 buf.setDouble(avgChunkCount);
             }
@@ -553,7 +549,7 @@ struct InstanceSummary
             }
             else
             {
-                buf.setDouble(t.totalBytes * 1.0 / t.numChunks);
+                buf.setDouble(static_cast<double>(t.totalBytes) * 1.0 / static_cast<double>(t.numChunks));
             }
             ociters[8]->setPosition(position);
             ociters[8]->writeItem(buf);

@@ -73,7 +73,7 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
     size_t const numInputAtts= settings.numInputAttributes();
     vector<string> attNames(numInputAtts);
     vector<shared_ptr<ConstArrayIterator> > iaiters(numInputAtts);
-    for(size_t i =0; i<numInputAtts; ++i)
+    for(AttributeID i =0; i<numInputAtts; ++i)
     {
         attNames[i] = inputSchema.getAttributes()[i].getName();
         iaiters[i] = inputArray->getConstIterator(i);
