@@ -11,13 +11,14 @@
 # END_COPYRIGHT
 ########################################
 
+add_definitions(-DCPP11)
+
 # shared library for user defined objects
-set (operators_src
+set (summarize_src
     plugin.cpp
-    LogicalStub.cpp
-    PhysicalStub.cpp
+    src/LogicalSummarize.cpp
+    src/PhysicalSummarize.cpp
 )
 
-add_library(operators SHARED ${operators_src})
-set_target_properties(operators PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${GENERAL_OUTPUT_DIRECTORY}/plugins)
-
+add_library(summarize SHARED ${summarize_src})
+set_target_properties(summarize PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${GENERAL_OUTPUT_DIRECTORY}/plugins)
