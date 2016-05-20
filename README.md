@@ -71,3 +71,11 @@ Summarize is one of several ways to get chunk sizing. We'll list some advantages
 ##Disadvantages:
  * Does not return compressed size or compression ratio for arrays with additional (`zlib`) compression enabled. You can find that data `list('datastores')` or `list('chunk map')`
  * Does not return other on-disk size overhead for stored arrays (tombstones, free lists, etc are not counted)
+
+#Updated Features
+ * A new option `size_type` which allows the data to be pulled from the physical chunk descriptors, thus allowing the compress size to discovered. Values may be:
+ ..* `uncompressed` or `usize`
+ ..* `compressed` or `csize`
+ ..* `allocated` or `asize`
+ * A new function, `human_bytes` to convert an obtuse value such as 341306424 to a more readable 325.50MB
+ 

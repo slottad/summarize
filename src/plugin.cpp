@@ -23,12 +23,17 @@
 * END_COPYRIGHT
 */
 
-#include <vector>
+//#include <vector>
+#include <algorithm>
+#include <boost/assign.hpp>
 
 #include <SciDBAPI.h>
 #include <system/ErrorsLibrary.h>
+#include "query/FunctionDescription.h"
 
+using namespace std;
 using namespace scidb;
+using namespace boost::assign;
 
 EXPORTED_FUNCTION void GetPluginVersion(uint32_t& major, uint32_t& minor, uint32_t& patch, uint32_t& build)
 {
@@ -37,6 +42,23 @@ EXPORTED_FUNCTION void GetPluginVersion(uint32_t& major, uint32_t& minor, uint32
     patch = SCIDB_VERSION_PATCH();
     build = SCIDB_VERSION_BUILD();
 }
+
+void human_bytes(const scidb::Value** args, scidb::Value* res, void*) 
+{
+    int64_t bytes = *(static_cast<int64_t*> (args[0]->data()));
+    double dbytes = static_cast<double>(bytes);
+    
+    const char *suffixes[] = {"bytes", "KB", "MB", "GB", "TB", "PB" };
+    size_t suffixes_size = 6;
+    size_t rank = static_cast<size_t>(trunc((log10(dbytes)) / 3));
+    rank = min(rank, suffixes_size - 1);
+    double human = dbytes / pow(1024.0, rank);
+    char buf[32];
+    sprintf(buf, "%4.2f%s", human, suffixes[rank]);
+    res->setString(buf);
+}
+
+
 
 class Instance
 {
@@ -48,3 +70,6 @@ public:
     {}
 
 } _instance;
+
+
+REGISTER_FUNCTION(human_bytes, list_of("int64"), TID_STRING, human_bytes);

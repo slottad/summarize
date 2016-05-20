@@ -15,7 +15,7 @@ add_definitions(-DCPP11)
 
 # shared library for user defined objects
 set (summarize_src
-    plugin.cpp
+    src/plugin.cpp
     src/LogicalSummarize.cpp
     src/PhysicalSummarize.cpp
 )

@@ -32,6 +32,7 @@
 #include <query/TypeSystem.h>
 #include <query/Operator.h>
 #include <log4cxx/logger.h>
+#include <smgr/io/InternalStorage.h>
 #include "SummarizeSettings.h"
 
 using std::shared_ptr;
@@ -65,6 +66,48 @@ public:
      return RedistributeContext(createDistribution(psUndefined), _schema.getResidency() );
  }
 
+
+    struct Descriptinator
+    {
+        enum class ST { uncompressed, compressed, allocated };
+            
+        Descriptinator(summarize::InstanceSummary& summary, const ArrayID& aid, string size_type)
+            : _summary(summary), _aid(aid), _st(ST::uncompressed)
+            {
+                if (size_type == "uncompressed" or size_type == "usize")
+                    _st = ST::uncompressed;
+                else if (size_type == "compressed" or size_type == "csize")
+                    _st = ST::compressed;
+                else if (size_type == "allocated" or size_type == "asize")
+                    _st = ST::allocated;
+                // Should probably throw an error if the size_type is
+                // unrecognized, but shouldn't that be caught much
+                // earlier?
+            }
+
+        void list(const ChunkDescriptor& desc, bool free) 
+            {
+                if (_aid == desc.hdr.arrId) {
+                    uint64_t size = 0;
+                    switch (_st) {
+                    case ST::uncompressed: size = desc.hdr.size;
+                        break;
+                    case ST::compressed: size = desc.hdr.compressedSize;
+                        break;
+                    case ST::allocated: size = desc.hdr.allocatedSize;
+                        break;
+                    }
+                    _summary.addChunkData(desc.hdr.attId, size, desc.hdr.nElems);
+                }
+            }
+        
+    private:
+        summarize::InstanceSummary& _summary;
+        const ArrayID& _aid;
+        ST _st;
+    };
+    
+    
 std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArrays, std::shared_ptr<Query> query)
 {
     shared_ptr<Array>& inputArray = inputArrays[0];
@@ -79,14 +122,35 @@ std::shared_ptr< Array> execute(std::vector< std::shared_ptr< Array> >& inputArr
         iaiters[i] = inputArray->getConstIterator(i);
     }
     summarize::InstanceSummary summary(query->getInstanceID(), numInputAtts, attNames);
-    for(AttributeID i=0; i<numInputAtts; ++i)
-    {
-        while(!iaiters[i]->end())
-        {
-            ConstChunk const& chunk = iaiters[i]->getChunk();
-            summary.addChunkData(i, chunk.getSize(), chunk.count());
-            ++(*iaiters[i]);
+
+    if (settings.useSizeType()) {
+        ArrayID id;
+        if (!iaiters[0]->end()) {
+            // AFAIK, the easiest way to get the versioned array id
+            // from the unversioned name is to Materialize the first
+            // chunk and use its ArrayDesc. If there is a more correct way...
+            ConstChunk const& chunk = iaiters[0]->getChunk();
+            id = chunk.getArrayDesc().getId();
+        } else {
+            id  = inputSchema.getId();
         }
+        
+        Descriptinator desc(summary, id, settings.getSizeType());
+        StorageManager::getInstance().visitChunkDescriptors(
+            Storage::ChunkDescriptorVisitor(
+                boost::bind(
+                        &Descriptinator::list,&desc,_1,_2)));
+    } else {
+        for(AttributeID i=0; i<numInputAtts; ++i)
+            {
+                while(!iaiters[i]->end())
+                    {
+                        ConstChunk const& chunk = iaiters[i]->getChunk();
+                        
+                        summary.addChunkData(i, chunk.getSize(), chunk.count());
+                        ++(*iaiters[i]);
+                    }
+            }
     }
     summary.makeFinalSummary(settings, _schema, query);
     return summary.toArray(settings, _schema, query);

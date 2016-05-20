@@ -77,7 +77,9 @@ private:
     bool _perAttribute;
     bool _perInstanceSet;
     bool _perInstance;
-
+    bool _sizeTypeSet;
+    string _sizeType;
+    
 public:
     static const size_t MAX_PARAMETERS = 2;
     Settings(ArrayDesc const& inputSchema,
@@ -89,18 +91,20 @@ public:
         _perAttributeSet(false),
         _perAttribute(false),
         _perInstanceSet(false),
-        _perInstance(false)
+        _perInstance(false),
+        _sizeTypeSet(false),
+        _sizeType("uncompressed")
     {
-        string const perAttributeParamHeader              = "per_attribute=";
-        string const perInstanceParamHeader               = "per_instance=";
+        //string const perAttributeParamHeader              = "per_attribute=";
+        //string const perInstanceParamHeader               = "per_instance=";
         size_t const nParams = operatorParameters.size();
-         if (nParams > MAX_PARAMETERS)
-         {   //assert-like exception. Caller should have taken care of this!
-             throw SYSTEM_EXCEPTION(SCIDB_SE_INTERNAL, SCIDB_LE_ILLEGAL_OPERATION)
-                   << "illegal number of parameters passed to Settings";
-         }
+        if (nParams > MAX_PARAMETERS)
+            {   //assert-like exception. Caller should have taken care of this!
+                throw SYSTEM_EXCEPTION(SCIDB_SE_INTERNAL, SCIDB_LE_ILLEGAL_OPERATION)
+                    << "illegal number of parameters passed to Settings";
+            }
         for(size_t i = 0; i<operatorParameters.size(); ++i)
-    	{
+        {
             shared_ptr<OperatorParam>const& param = operatorParameters[i];
             {
                 string parameterString;
@@ -118,6 +122,24 @@ public:
     }
 private:
 
+    bool checkStringParam(string const& param, string const& header, string& target, bool& setFlag)
+        {
+            string headerWithEq = header + "=";
+            if(starts_with(param, headerWithEq)) {
+                if(setFlag) {
+                    ostringstream error;
+                    error<<"illegal attempt to set "<<header<<" multiple times";
+                    throw SYSTEM_EXCEPTION(SCIDB_SE_INTERNAL, SCIDB_LE_ILLEGAL_OPERATION) << error.str().c_str();
+                }
+                
+                target = param.substr(headerWithEq.size());
+                trim(target);
+                setFlag = true;
+                return true;
+            }
+            return false;
+        }
+    
     bool checkBoolParam(string const& param, string const& header, bool& target, bool& setFlag)
     {
         string headerWithEq = header + "=";
@@ -148,8 +170,10 @@ private:
     }
     void parseStringParam(string const& param)
     {
-        if(checkBoolParam (param,   "per_attribute",       _perAttribute,          _perAttributeSet       ) ) { return; }
-        if(checkBoolParam (param,   "per_instance",        _perInstance,           _perInstanceSet       ) ) { return; }
+        if(checkBoolParam (param,  "per_attribute", _perAttribute, _perAttributeSet ) ) { return; }
+        if(checkBoolParam (param,  "per_instance",  _perInstance,  _perInstanceSet  ) ) { return; }
+        if(checkStringParam (param, "size_type",    _sizeType,     _sizeTypeSet     ) ) { return; }
+        
         ostringstream error;
         error<<"unrecognized parameter "<<param;
         throw SYSTEM_EXCEPTION(SCIDB_SE_INTERNAL, SCIDB_LE_ILLEGAL_OPERATION) << error.str().c_str();
@@ -190,6 +214,16 @@ public:
     bool perInstanceflag() const
     {
         return _perInstance;
+    }
+
+    bool useSizeType() const
+    {
+        return _sizeTypeSet;
+    }
+            
+    string getSizeType() const
+    {
+        return _sizeType;
     }
 };
 
