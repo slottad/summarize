@@ -74,8 +74,8 @@ Summarize is one of several ways to get chunk sizing. We'll list some advantages
 
 #Updated Features
  * A new option `size_type` which allows the data to be pulled from the physical chunk descriptors, thus allowing the compress size to discovered. Values may be:
- ..* `uncompressed` or `usize`
- ..* `compressed` or `csize`
- ..* `allocated` or `asize`
- * A new function, `human_bytes` to convert an obtuse value such as 341306424 to a more readable 325.50MB
+   * `uncompressed` or `usize`
+   * `compressed` or `csize`
+   * `allocated` or `asize`
+ * A new function, `human_bytes()`, which can convert an obtuse value such as 341306424 to a more readable 325.50MB
  
